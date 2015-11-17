@@ -337,6 +337,8 @@ module Capybara::Poltergeist
       cmd = Command.new(name, *args)
       log cmd.message
 
+      puts "#{self.class}.#{__method__}"
+      puts "  server.send(#{cmd.inspect})"
       response = server.send(cmd)
       log response
 

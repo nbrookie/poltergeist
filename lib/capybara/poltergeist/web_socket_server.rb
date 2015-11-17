@@ -51,24 +51,28 @@ module Capybara::Poltergeist
     # Accept a client on the TCP server socket, then receive its initial HTTP request
     # and use that to initialize a Web Socket.
     def accept
+      puts "#{self.class}.#{__method__}"
       @socket   = server.accept
       @messages = {}
 
       @driver = ::WebSocket::Driver.server(self)
-      @driver.on(:connect) { |event| @driver.start }
+      @driver.on(:connect) { |event| puts "CONNECT!!!"; @driver.start }
       @driver.on(:message) do |event|
+        puts "MESSAGE!!!"
         command_id = JSON.load(event.data)['command_id']
         @messages[command_id] = event.data
       end
     end
 
     def write(data)
+      puts "#{self.class}.#{__method__}"
       @socket.write(data)
     end
 
     # Block until the next message is available from the Web Socket.
     # Raises Errno::EWOULDBLOCK if timeout is reached.
     def receive(cmd_id)
+      puts "#{self.class}.#{__method__}"
       start = Time.now
 
       until @messages.has_key?(cmd_id)
@@ -76,8 +80,11 @@ module Capybara::Poltergeist
         if @receive_mutex.try_lock
           begin
             IO.select([socket], [], [], timeout) or raise Errno::EWOULDBLOCK
+            puts "  data = socket.recv(#{RECV_SIZE})"
             data = socket.recv(RECV_SIZE)
+            puts "    data: \n#{data}"
             break if data.empty?
+            puts "  driver.parse(#{data})"
             driver.parse(data)
           ensure
             @receive_mutex.unlock
@@ -91,8 +98,12 @@ module Capybara::Poltergeist
 
     # Send a message and block until there is a response
     def send(cmd_id, message)
+      puts "#{self.class}.#{__method__}"
+      puts "  accept unless connected? (connected?: #{connected?})"
       accept unless connected?
+      puts "  driver.text(#{message})"
       driver.text(message)
+      puts "  receive(#{cmd_id})"
       receive(cmd_id)
     rescue Errno::EWOULDBLOCK
       raise TimeoutError.new(message)
@@ -101,6 +112,7 @@ module Capybara::Poltergeist
     # Closing sockets separately as `close_read`, `close_write`
     # causes IO mistakes on JRuby, using just `close` fixes that.
     def close
+      puts "#{self.class}.#{__method__}"
       [server, socket].compact.each(&:close)
     end
   end

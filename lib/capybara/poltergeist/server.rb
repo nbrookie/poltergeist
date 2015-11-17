@@ -30,6 +30,8 @@ module Capybara::Poltergeist
     end
 
     def send(command)
+      puts "#{self.class}.#{__method__}"
+      puts "  @socket.send(#{command.id}, #{command.message})"
       @socket.send(command.id, command.message) or raise DeadClient.new(command.message)
     end
   end

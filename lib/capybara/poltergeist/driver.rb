@@ -22,6 +22,7 @@ module Capybara::Poltergeist
 
     def browser
       @browser ||= begin
+        puts "#{self.class}.#{__method__}"
         browser = Browser.new(server, client, logger)
         browser.js_errors  = options[:js_errors] if options.key?(:js_errors)
         browser.extensions = options.fetch(:extensions, [])
